@@ -6,7 +6,8 @@
     "cdk": "cdk",
     "test": "pytest tests/unit",
     "lint": "ruff check . && ruff format --check . && tsc && markdownlint-cli2",
-    "lint:fix": "ruff check --fix . && ruff format . && markdownlint-cli2 --fix"
+    "lint:fix": "ruff check --fix . && ruff format . && markdownlint-cli2 --fix",
+    "test:e2e": "pytest tests/e2e"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

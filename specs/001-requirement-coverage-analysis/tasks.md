@@ -55,12 +55,12 @@
 
 ### Tests for User Story 1
 
-- [ ] T014 [US1] E2E テストを書く（赤）: 新しい `run-id` にサンプルを置き、`report.csv` の出現を待ち、行数 180 と、要件の数の一致（SC-003）を確かめる。対象: `tests/e2e/test_run_sample.py`
+- [x] T014 [US1] E2E テストを書く（赤）: 新しい `run-id` にサンプルを置き、`report.csv` の出現を待ち、行数 180 と、要件の数の一致（SC-003）を確かめる。対象: `tests/e2e/test_run_sample.py`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] `decider_client.py` を実装する。要件を state、テストを noul の質問にして呼ぶ。一時的なエラーのみ3回再試行する。読み取りの待ちを 900 秒にする。対象: `src/req_coverage_runner/decider_client.py`
-- [ ] T016 [P] [US1] `report.py` を実装する。`report.csv`、`report.json`、`report.md` を、contracts/report.md のとおりに書く。対象: `src/req_coverage_runner/report.py`
+- [x] T015 [P] [US1] `decider_client.py` を実装する。要件を state、テストを noul の質問にして呼ぶ。一時的なエラーのみ3回再試行する。読み取りの待ちを 900 秒にする。対象: `src/req_coverage_runner/decider_client.py`
+- [x] T016 [P] [US1] `report.py` を実装する。`report.csv`、`report.json`、`report.md` を、contracts/report.md のとおりに書く。対象: `src/req_coverage_runner/report.py`
 - [ ] T017 [US1] `handler.py` を実装する。CSV の読み込み、要件ごとの decider の呼び出し（同時 50 本）、集計、レポートの書き出し。対象: `src/req_coverage_runner/handler.py`
 - [ ] T018 [US1] runner の Lambda（Python 3.14、512 MB、上限15分）と IAM（実行フォルダの読み書き、decider の呼び出し）を作る。対象: `lib/runner.ts`
 - [ ] T019 [US1] Step Functions を作る: 実行の印の条件つき書き込み、`input/` の一覧で2ファイルを待つ（最大10分）、runner の呼び出し。全体のタイムアウト（30分）を付ける。対象: `lib/workflow.ts`

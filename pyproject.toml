@@ -5,10 +5,10 @@ requires-python = ">=3.14"
 dependencies = []
 
 [dependency-groups]
-dev = ["pytest==9.2.0", "ruff==0.17.5"]
+dev = ["pytest==9.2.0", "ruff==0.17.5", "boto3==1.44.3"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "tests/e2e"]
 testpaths = ["tests"]
 
 [tool.ruff]
