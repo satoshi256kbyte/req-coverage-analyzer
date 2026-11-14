@@ -41,6 +41,10 @@
 | `confidence` | 数値または null | カバー済みなら、一致したテストの最高の確信度。未カバーは null |
 | `level` | `high`、`medium`、`low`、`needs_review` | 確度が 0.9 以上で high、0.7 以上で medium、それ未満で low。未カバーは needs_review |
 
+### どの要件にも対応しなかったテスト（UnmatchedTest）
+
+どの要件でも「はい」と判定されなかったテスト。`id` と `description` を持つ。入力の順。
+
 ### 実行（Run）
 
 | 項目 | 型 | 規則 |

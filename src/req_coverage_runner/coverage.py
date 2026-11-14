@@ -91,3 +91,12 @@ def build_coverage(requirements: list[Row], tests: list[Row], judgments: list[Ju
         matched.sort(key=lambda m: m.score, reverse=True)
         result.append(Coverage(req.id, bool(matched), matched))
     return result
+
+
+def unmatched_tests(tests: list[Row], coverage: list[Coverage]) -> list[Row]:
+    """どの要件でも「はい」と判定されなかったテスト。入力の順。
+
+    要件より、テストが多いのは普通。要件にない動作のテストか、モデルの見逃しかは、人が確かめる。
+    """
+    matched = {m.test_id for c in coverage for m in c.matched}
+    return [t for t in tests if t.id not in matched]

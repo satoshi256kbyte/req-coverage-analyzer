@@ -1,6 +1,6 @@
 import pytest
 
-from req_coverage_runner.coverage import THRESHOLD, Judgment, build_coverage, judge
+from req_coverage_runner.coverage import THRESHOLD, Judgment, build_coverage, judge, unmatched_tests
 from req_coverage_runner.csv_io import Row
 
 REQS = [Row("R1", "要件1"), Row("R2", "要件2"), Row("R3", "要件3")]
@@ -94,3 +94,16 @@ def test_未カバーの要件は確度を出さず要確認にする():
         assert not c.covered
         assert c.confidence is None
         assert c.level == "needs_review"
+
+
+def test_どの要件にも対応しなかったテストを入力の順に返す():
+    tests = [Row("T1", "a"), Row("T2", "b"), Row("T3", "c")]
+    js = [Judgment(r, t, s) for r, t, s in [("R1", "T1", 0.9), ("R1", "T2", 0.1), ("R1", "T3", 0.1)]]
+    js += [Judgment(r, t, 0.2) for r in ("R2", "R3") for t in ("T1", "T2", "T3")]
+    cov = build_coverage(REQS, tests, js)
+    assert unmatched_tests(tests, cov) == [Row("T2", "b"), Row("T3", "c")]
+
+
+def test_すべてのテストが対応していれば空():
+    js = [Judgment(r, t, 0.9) for r in ("R1", "R2", "R3") for t in ("T1", "T2")]
+    assert unmatched_tests(TESTS, build_coverage(REQS, TESTS, js)) == []
