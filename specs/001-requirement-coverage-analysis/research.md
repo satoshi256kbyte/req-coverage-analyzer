@@ -1,0 +1,82 @@
+# Research: 要件カバレッジの自動判定
+
+## 決定
+
+### D1. 判定の組み立て方
+
+- **Decision**: 要件1件を `state` に、全テストを noul（はい／いいえ）の質問にして、1回の呼び出しで答えを得る。
+- **Rationale**: Strands Decider は、同じ state への複数の質問を、1回で処理できる。
+  公式の測定では、質問が増えても、1つずつ呼ぶより大きく安い（state は1回だけ読まれる）。
+  100件の要件なら呼び出しは100回で済む。
+- **Alternatives**: 1組ずつ呼ぶ。1万回になり、遅く高い。
+
+### D2. 「はい」の基準と確信度
+
+- **Decision**: noul の値（0〜1）が 0.5 以上なら「はい」。確信度は、`max(p, 1 - p)` とする。値そのもの（`score`）も残す。
+- **Rationale**: Decider は、0 に近いと「いいえ」、1 に近いと「はい」を意味する。文章の理由は作れないため、確信度を根拠とする（Clarifications）。
+- **Alternatives**: しきい値を可変にする。MVP では固定とし、実測の後で調整する。
+
+### D3. 計算の置き場所（GPU の EC2 から Lambda へ変更）
+
+- **Decision**: Strands Labs 公式の Lambda 版（`deploy/lambda`、CPU の arm64、llama.cpp で Q8_0 に量子化）を使う。
+- **Rationale**:
+  - 公式が用意した CDK のスタックを、そのまま使える。EC2、SSM、UserData、停止の保証が要らない。
+  - 待機中の費用は、月 約 $0.25（ECR のイメージ）。止め忘れがない。
+  - EC2 案の未確認の危険（`causal-conv1d` のビルド）が消える。
+  - 公式の測定で、4,000 語が 29〜45 秒。100×100 件は同時 25 本で 5〜10 分と見積もれ、30 分以内（SC-002）に収まる。
+- **Alternatives**:
+  - GPU の EC2（元の案）: 速いが、部品が多く、止め忘れの対策が要る。
+  - SageMaker のエンドポイント: 常時課金になる。憲章 V に反する。
+- **Trade-off**: 1回の判定は、GPU より遅い。量子化（Q8_0）のため、確信度が 0.026 までずれる（公式の測定）。MVP では許容し、E2E で精度を測る。
+
+### D4. decider のデプロイ
+
+- **Decision**: 公式のリポジトリ（`strands-labs/strands-decider`）の `deploy/lambda` を、コミットを固定して取得し、別のスタックとして `cdk deploy` する。
+  私たちの CDK は、その関数の ARN を、コンテキストで受け取る。
+- **Rationale**: 公式のスタックは、CodeBuild でイメージを作る（約10分）。これを私たちのスタックに取り込むと、重く、公式の更新に追随しにくい。
+- **Alternatives**: 私たちのスタックに取り込む。1回のデプロイで済むが、MVP としては重い。
+- **手間**: 初回に手作業が1回ある（[quickstart.md](quickstart.md)）。
+
+### D5. 呼び出しの単位と並列
+
+- **Decision**: runner（Lambda）が、要件ごとに decider を直接呼ぶ。同時 25 本。runner の上限は15分。
+- **Rationale**: Step Functions の Map で分けるより、部品が少ない。見積もりは 5〜10 分で、15分に収まる。
+- **Alternatives**: Step Functions の Map（分散）で、各要件を別の Lambda にする。上限に強いが、Lambda と状態が増える。見積もりが外れたら、これに移る。
+- **注意**: boto3 の既定の読み取りの待ち時間は 60 秒で、decider の1回（最大 数分）に足りない。900 秒にする。
+
+### D6. 実行の起動と重複の除去
+
+- **Decision**: EventBridge で `input/` 配下の2つの CSV の作成を検知し、Step Functions を起動する。
+  最初の実行だけが、`state/claimed` を `If-None-Match: *` で書いて、続行する。
+- **Rationale**: S3 の条件つき書き込みは、公式にサポートされている。DynamoDB を足さずに済む。
+- **Alternatives**: DynamoDB の条件つき書き込み。確実だが、リソースが増える。
+- **代替の準備**: Step Functions の S3 連携が `IfNoneMatch` を渡せない場合は、runner の入口で同じ書き込みを行う。
+
+### D7. 課金が続かないことの保証
+
+- **Decision**: 常時動く資源を置かない。decider は SnapStart を切る。各 Lambda に上限の時間を付ける。
+- **Rationale**: 憲章 V。Lambda は、呼ばれない間は課金されない。
+- **注意**: decider の SnapStart を入れると、月 約 $39.50 かかる。入れない。
+
+### D8. ネットワーク
+
+- **Decision**: VPC を作らない。Lambda は、AWS の既定のネットワークで動く。
+- **Rationale**: Lambda は、S3 と Lambda の API に、そのまま届く。NAT も、サブネットも、セキュリティグループも要らない。
+
+### D9. テストの方針
+
+- **Decision**: pytest で `coverage.py` と `csv_io.py` を単体テストする。E2E は、サンプルを実際の AWS に置き、`expected.csv` と比べる。
+- **Rationale**: 憲章 III。
+
+## 未確認（実装の最初に実機で確かめる）
+
+| 項目 | 内容 | 確かめ方 |
+| --- | --- | --- |
+| decider のデプロイ | 公式のスタックが、このアカウントとリージョンでデプロイできるか。所要時間 | `cdk deploy`（`deploy/lambda`） |
+| 1回の質問の数と時間 | 質問100個、約 8,000 語で、何秒かかるか。上限の 24,576 語に収まるか | 実機で1要件を送る |
+| 同時 25 本 | 新しい実行環境の読み込み（6〜30 秒）と合わせて、15分に収まるか | E2E で測定 |
+| S3 の条件つき書き込み | Step Functions の S3 連携で `IfNoneMatch` を渡せるか | `cdk deploy` して試す |
+| モデルの精度 | サンプルで `expected.csv` と比べた一致の程度。日本語の判定の質 | E2E で測定 |
+| 同時実行の枠 | decider の同時 25 本が、アカウントの Lambda の同時実行の枠に収まるか | Service Quotas で確認 |
+
+未確認の項目で前提が崩れた場合は、該当の決定（D3、D5、D6）を見直し、plan を直す。
