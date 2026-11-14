@@ -471,8 +471,25 @@ Spec Kit の初期構成から、Spec の全34タスク完了まで。PRの時�
 | Kiro Crew | 任せて離れられる。仕様駆動開発で、Spec の34タスクを約5時間で完了 |
 | 判定の信頼性 | 「対応あり」の誤検出は0件。「対応なし」には見逃しがある |
 | 精度(サンプル) | 見つけた正解 9組 / 14組。要件ごとの一致 11件 / 12件 |
-| 性能と費用 | 100要件×100テストで4分43秒。待機中は月約$0.25 |
+| 性能と費用 | 100要件×100テストで約4分半(コストは約$1.3〜1.4)。待機中は月約$0.25 |
 | 使い方 | 「対応なし」の要件と、どの要件にも対応しないテストを、人が見る |
-| 気になる点 | コールドスタート約5分、メモリ消費、設定の二重管理 |
+| 気になる点 | コールドスタートの長さ(測定でばらつく)、メモリ消費、設定の二重管理 |
 
 - 次にやること: 実際の要件文での精度を測る
+
+---
+
+# 参考リンク集
+
+| 分類 | 内容 | リンク |
+| --- | --- | --- |
+| Kiro Crew | 紹介(AWSブログ) | [Kiro Crew の紹介](https://aws.amazon.com/jp/blogs/news/introducing-kiro-crew/) |
+| Kiro Crew | エージェントハーネスの選択 | [Agent backends](https://kiro.dev/docs/crew/features/agent-backends/) |
+| Strands Decider | 概要とコード(GitHub) | [strands-decider](https://github.com/strands-labs/strands-decider) |
+| Strands Decider | モデル(Hugging Face) | [strands-decider-2B-qwen3.5-v1-2610](https://huggingface.co/StrandsAgents/strands-decider-2B-qwen3.5-v1-2610) |
+| Strands Decider | 推論の手順 | [docs/inference.md](https://github.com/strands-labs/strands-decider/blob/main/docs/inference.md) |
+| Strands Decider | AWS Lambda 版のデプロイ | [deploy/lambda](https://github.com/strands-labs/strands-decider/tree/main/deploy/lambda) |
+| 開発手法 | 仕様駆動開発 | [GitHub Spec Kit](https://github.com/github/spec-kit) |
+| 開発環境 | pnpm で Node と Python を管理 | [Serverworks ブログ](https://blog.serverworks.co.jp/pnpm-python-aws-package-management) |
+
+- Kiro Crew の意思決定モデル(Jev)と Remote Crew は、Kiro Crew 同梱のドキュメントを参照
