@@ -26,6 +26,8 @@ export class Runner extends Construct {
       handler: 'req_coverage_runner.handler.lambda_handler',
       code: lambda.Code.fromAsset('src', { exclude: ['**/__pycache__', '**/*.pyc'] }),
       memorySize: 512,
+      // 同時に動く実行を、少数に抑える（decider の同時実行と費用を、利用者の入力で増やさない）
+      reservedConcurrentExecutions: 5,
       // decider の冷えた読み込み（約5分）と判定を含めて、Lambda の上限の15分
       timeout: cdk.Duration.minutes(15),
       environment: {
@@ -39,9 +41,28 @@ export class Runner extends Construct {
       }),
     });
 
-    // 入力の読み取りと、出力の書き込みだけ。決まったフォルダの下に限る
-    props.bucket.grantRead(this.function, 'runs/*/input/*');
-    props.bucket.grantPut(this.function, 'runs/*/output/*');
+    // 入力の読み取りと、出力の書き込みだけ。決まったフォルダの下に限る。
+    // 一覧の権限は、入力の下の指定に限る。これがないと、存在しないキーの読み取りが、
+    // 「ない」（NoSuchKey）ではなく「権限がない」（AccessDenied）になる
+    this.function.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: [props.bucket.arnForObjects('runs/*/input/*')],
+      }),
+    );
+    this.function.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:ListBucket'],
+        resources: [props.bucket.bucketArn],
+        conditions: { StringLike: { 's3:prefix': ['runs/*/input/*'] } },
+      }),
+    );
+    this.function.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:PutObject'],
+        resources: [props.bucket.arnForObjects('runs/*/output/*')],
+      }),
+    );
     this.function.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['lambda:InvokeFunction'],

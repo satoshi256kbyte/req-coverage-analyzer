@@ -2,6 +2,7 @@
 
 必要な環境変数:
 - E2E_BUCKET: スタックの出力 `BucketName`
+- E2E_STATE_MACHINE_ARN: スタックの出力 `StateMachineArn`（重複起動のテストで使う）
 - E2E_REGION: 省略すると ap-northeast-1
 """
 
@@ -29,6 +30,19 @@ def bucket() -> str:
 @pytest.fixture(scope="session")
 def s3():
     return boto3.client("s3", region_name=os.environ.get("E2E_REGION", "ap-northeast-1"))
+
+
+@pytest.fixture(scope="session")
+def sfn():
+    return boto3.client("stepfunctions", region_name=os.environ.get("E2E_REGION", "ap-northeast-1"))
+
+
+@pytest.fixture(scope="session")
+def state_machine_arn() -> str:
+    arn = os.environ.get("E2E_STATE_MACHINE_ARN")
+    if not arn:
+        pytest.fail("E2E_STATE_MACHINE_ARN が未設定です。スタックの出力 StateMachineArn を指定してください")
+    return arn
 
 
 @pytest.fixture

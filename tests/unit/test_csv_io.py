@@ -1,6 +1,13 @@
 import pytest
 
-from req_coverage_runner.csv_io import MAX_ROWS, CsvError, Row, parse_csv
+from req_coverage_runner.csv_io import (
+    MAX_DESCRIPTION_CHARS,
+    MAX_FILE_BYTES,
+    MAX_ROWS,
+    CsvError,
+    Row,
+    parse_csv,
+)
 
 
 def _csv(*lines: str) -> bytes:
@@ -75,3 +82,40 @@ def test_UTF8でない入力は失敗する():
 
 def test_空行は無視する():
     assert parse_csv(_csv("id,description", "", "REQ-001,説明", ""), "x.csv") == [Row("REQ-001", "説明")]
+
+
+@pytest.mark.parametrize(
+    "bad_id", ["=1+1", "+cmd", "-1", "@SUM(A1)", "a|b", "a b", "a\u3000b", "<img>", "a`b", "x" * 65, "a/b"]
+)
+def test_idに使えない文字や長さは失敗する(bad_id):
+    with pytest.raises(CsvError) as e:
+        parse_csv(_csv("id,description", f'"{bad_id}",説明'), "requirements.csv")
+    assert e.value.code == "invalid_id"
+    assert "requirements.csv" in e.value.message
+
+
+@pytest.mark.parametrize("good_id", ["REQ-001", "R_1.2", "機能-001", "a", "x" * 64, "E2E-001"])
+def test_idに使える文字(good_id):
+    assert parse_csv(_csv("id,description", f"{good_id},説明"), "x.csv") == [Row(good_id, "説明")]
+
+
+def test_説明の長さの上限():
+    assert parse_csv(_csv("id,description", f"R1,{'あ' * MAX_DESCRIPTION_CHARS}"), "x.csv")[0].id == "R1"
+    with pytest.raises(CsvError) as e:
+        parse_csv(_csv("id,description", f"R1,{'あ' * (MAX_DESCRIPTION_CHARS + 1)}"), "x.csv")
+    assert e.value.code == "value_too_long"
+
+
+def test_ファイルの大きさの上限():
+    with pytest.raises(CsvError) as e:
+        parse_csv(b"x" * (MAX_FILE_BYTES + 1), "requirements.csv")
+    assert e.value.code == "file_too_large"
+
+
+def test_エラーの行番号は空行と複数行のセルを数えたファイル上の行():
+    data = _csv("id,description", "", 'R1,"一行目', '二行目"', "R2,")
+    with pytest.raises(CsvError) as e:
+        parse_csv(data, "requirements.csv")
+    assert e.value.code == "empty_value"
+    # ヘッダ(1行目)、空行(2行目)、R1 は 3〜4 行目、R2 は 5 行目
+    assert "5行目" in e.value.message
