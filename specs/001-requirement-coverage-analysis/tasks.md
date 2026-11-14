@@ -35,8 +35,8 @@
 
 **⚠ CRITICAL**: T007〜T008 で前提が崩れたら、plan と research を直してから進める
 
-- [ ] T007 公式の decider（`strands-labs/strands-decider` の `deploy/lambda`）を、固定したコミットでデプロイし、別名 `live` の ARN を控える。SnapStart は切る（research D4）。成果物: 手順を `quickstart.md` に反映
-- [ ] T008 decider に、要件1件と100個のテストの質問を直接送り、所要時間、1回の上限、日本語の判定の質を確かめる。decider の別名 `live` の ARN で、直接呼べることも確かめる。結果を `research.md` の「未確認」に記録する。成果物: `research.md`
+- [x] T007 公式の decider（`strands-labs/strands-decider` の `deploy/lambda`）を、固定したコミットでデプロイし、別名 `live` の ARN を控える。SnapStart は切る（research D4）。成果物: 手順を `quickstart.md` に反映
+- [x] T008 decider に、要件1件と100個のテストの質問を直接送り、所要時間、1回の上限、日本語の判定の質を確かめる。decider の別名 `live` の ARN で、直接呼べることも確かめる。結果を `research.md` の「未確認」に記録する。成果物: `research.md`
 - [x] T009 [P] 単体テスト（赤）: CSV の検証。ヘッダ違い、空の値、`id` の重複、0件、101件、UTF-8 以外、BOM つき。対象: `tests/unit/test_csv_io.py`
 - [x] T010 [P] 単体テスト（赤）: 集計。1件以上の「はい」でカバー済み、0件で未カバー、`score` の降順、しきい値 0.5 の境界。対象: `tests/unit/test_coverage.py`
 - [x] T011 [P] `csv_io.py` を実装する（T009 を通す）。対象: `src/req_coverage_runner/csv_io.py`
@@ -61,7 +61,7 @@
 
 - [ ] T015 [P] [US1] `decider_client.py` を実装する。要件を state、テストを noul の質問にして呼ぶ。一時的なエラーのみ3回再試行する。読み取りの待ちを 900 秒にする。対象: `src/req_coverage_runner/decider_client.py`
 - [ ] T016 [P] [US1] `report.py` を実装する。`report.csv`、`report.json`、`report.md` を、contracts/report.md のとおりに書く。対象: `src/req_coverage_runner/report.py`
-- [ ] T017 [US1] `handler.py` を実装する。CSV の読み込み、要件ごとの decider の呼び出し（同時 25 本）、集計、レポートの書き出し。対象: `src/req_coverage_runner/handler.py`
+- [ ] T017 [US1] `handler.py` を実装する。CSV の読み込み、要件ごとの decider の呼び出し（同時 50 本）、集計、レポートの書き出し。対象: `src/req_coverage_runner/handler.py`
 - [ ] T018 [US1] runner の Lambda（Python 3.14、512 MB、上限15分）と IAM（実行フォルダの読み書き、decider の呼び出し）を作る。対象: `lib/runner.ts`
 - [ ] T019 [US1] Step Functions を作る: 実行の印の条件つき書き込み、`input/` の一覧で2ファイルを待つ（最大10分）、runner の呼び出し。全体のタイムアウト（30分）を付ける。対象: `lib/workflow.ts`
 - [ ] T020 [US1] EventBridge の規則を作る（`input/` 配下の2ファイルの作成で起動）。対象: `lib/workflow.ts`
