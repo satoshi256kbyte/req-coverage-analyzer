@@ -1,6 +1,7 @@
 """E2E テストの補助関数。"""
 
 import time
+import uuid
 from pathlib import Path
 
 import pytest
@@ -41,3 +42,15 @@ def wait_for_output(s3, bucket: str, rid: str, timeout: int = TIMEOUT_SECONDS) -
 
 def get_text(s3, bucket: str, key: str) -> str:
     return s3.get_object(Bucket=bucket, Key=key)["Body"].read().decode("utf-8")
+
+
+def new_run_id() -> str:
+    return f"e2e-{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+
+
+def delete_run(s3, bucket: str, rid: str) -> None:
+    """実行フォルダの中身を、すべて消す。"""
+    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=f"runs/{rid}/"):
+        keys = [{"Key": o["Key"]} for o in page.get("Contents", [])]
+        if keys:
+            s3.delete_objects(Bucket=bucket, Delete={"Objects": keys})

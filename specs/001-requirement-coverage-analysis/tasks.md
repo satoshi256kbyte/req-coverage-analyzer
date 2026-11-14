@@ -78,9 +78,9 @@
 
 **Independent Test**: レポートが、要件、テスト、判定、確信度を持ち、未カバーが明示される
 
-- [ ] T023 [US2] E2E テストを書く（赤）: `report.json` の REQ-008、REQ-012 が未カバーであること、全組に `verdict` と `confidence` があることを確かめる。対象: `tests/e2e/test_report_content.py`
-- [ ] T024 [US2] `samples/expected.csv` とレポートを比べ、一致の程度（適合率、再現率）を出して記録する（SC-004）。対象: `tests/e2e/test_accuracy.py`
-- [ ] T025 [US2] `report.md` の見え方を整える（未カバーを先にまとめる）。必要なら、しきい値や質問の文言を調整し、理由を `research.md` に記録する。対象: `src/req_coverage_runner/report.py`、`src/req_coverage_runner/decider_client.py`
+- [x] T023 [US2] E2E テストを書く（赤）: `report.json` の REQ-008、REQ-012 が未カバーであること、全組に `verdict` と `confidence` があることを確かめる。対象: `tests/e2e/test_report_content.py`
+- [x] T024 [US2] `samples/expected.csv` とレポートを比べ、一致の程度（適合率、再現率）を出して記録する（SC-004）。対象: `tests/e2e/test_accuracy.py`
+- [x] T025 [US2] `report.md` の見え方を整える（未カバーを先にまとめる）。必要なら、しきい値や質問の文言を調整し、理由を `research.md` に記録する。対象: `src/req_coverage_runner/report.py`、`src/req_coverage_runner/decider_client.py`
 
 **Checkpoint**: US1 と US2 がどちらも動く
 
