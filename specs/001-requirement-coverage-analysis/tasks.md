@@ -63,7 +63,7 @@
 - [x] T016 [P] [US1] `report.py` を実装する。`report.csv`、`report.json`、`report.md` を、contracts/report.md のとおりに書く。対象: `src/req_coverage_runner/report.py`
 - [x] T017 [US1] `handler.py` を実装する。CSV の読み込み、要件ごとの decider の呼び出し（同時 50 本）、集計、レポートの書き出し。対象: `src/req_coverage_runner/handler.py`
 - [x] T018 [US1] runner の Lambda（Python 3.14、512 MB、上限15分）と IAM（実行フォルダの読み書き、decider の呼び出し）を作る。対象: `lib/runner.ts`
-- [ ] T019 [US1] Step Functions を作る: 実行の印の条件つき書き込み、`input/` の一覧で2ファイルを待つ（最大10分）、runner の呼び出し。全体のタイムアウト（30分）を付ける。対象: `lib/workflow.ts`
+- [x] T019 [US1] Step Functions を作る: 実行の印の条件つき書き込み、`input/` の一覧で2ファイルを待つ（最大10分）、runner の呼び出し。全体のタイムアウト（30分）を付ける。対象: `lib/workflow.ts`
 - [ ] T020 [US1] EventBridge の規則を作る（`input/` 配下の2ファイルの作成で起動）。対象: `lib/workflow.ts`
 - [ ] T021 [US1] スタックを組み立て、decider の ARN をコンテキストで受け取る。`pnpm cdk synth` を通す。対象: `lib/infra-stack.ts`、`bin/infra.ts`
 - [ ] T022 [US1] デプロイして、T014 の E2E を通す。未確認の項目（条件つき書き込み、15分に収まるか）の結果を `research.md` に記録する

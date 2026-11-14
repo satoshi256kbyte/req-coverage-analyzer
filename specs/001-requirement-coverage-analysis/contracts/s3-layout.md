@@ -42,3 +42,4 @@ runs/<run-id>/
 | `input_timeout` | 2つの CSV が10分以内に揃わなかった |
 | `inference_failed` | 判定モデルの呼び出しが、再試行しても失敗した |
 | `runner_timeout` | 判定の処理が上限の時間を超えた |
+| `internal_error` | 想定外のエラー（ログで確認する） |
