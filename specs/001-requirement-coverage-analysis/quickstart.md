@@ -12,8 +12,14 @@
 
 1. 公式の decider をデプロイする（初回のみ。約10分）。
 
-   - 公式のリポジトリ `strands-labs/strands-decider` を、固定したコミットで取得する。
-   - `deploy/lambda` で、`npm install` と `npx cdk deploy` を行う。SnapStart は切ったままにする。
+   - 公式のリポジトリ `strands-labs/strands-decider` を、コミット `79bf6e7184c166990eec79034667cc0bfd445e12` で取得する。
+   - `deploy/lambda` で、`npm ci` と、次のコマンドを実行する。SnapStart は切ったままにする。
+
+     ```sh
+     AWS_REGION=ap-northeast-1 npx cdk deploy \
+       -c model_revision=216d1ccb46a9e9b036eb9187b248db98480f77d4
+     ```
+
    - スタックの出力から、別名 `live` の ARN を控える。
 
 2. 私たちのスタックをデプロイする。

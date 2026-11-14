@@ -3,3 +3,18 @@ name = "req-coverage-analyzer"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = []
+
+[dependency-groups]
+dev = ["pytest==9.2.0", "ruff==0.17.5", "boto3==1.44.3"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests/e2e"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = ["node_modules", "cdk.out", ".kiro", ".specify"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

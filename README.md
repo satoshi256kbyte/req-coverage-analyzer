@@ -70,8 +70,11 @@ pnpm install
 ## タスク
 
 ```sh
-pnpm build    # CDKのビルド
-pnpm cdk synth
+pnpm build      # CDK の型の検査
+pnpm cdk synth -c deciderFunctionArn=<decider の別名 live の ARN>  # テンプレートの生成
+pnpm lint       # ruff、tsc、markdownlint-cli2
+pnpm test       # 単体テスト（業務ロジック）
+pnpm test:e2e   # E2E（デプロイ済みのスタックが必要。環境変数 E2E_BUCKET にバケット名を渡す）
 ```
 
 デプロイの手順は、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。
