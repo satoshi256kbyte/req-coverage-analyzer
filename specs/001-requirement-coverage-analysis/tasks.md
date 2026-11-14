@@ -92,11 +92,11 @@
 
 **Independent Test**: 不正な入力で `FAILED.json` ができ、実行のあとに課金が続く資源がない
 
-- [ ] T026 [US3] E2E テストを書く（赤）: ヘッダを壊した CSV、`id` が重複した CSV、片方だけの CSV で、期待する `error_code` の `FAILED.json` ができる。対象: `tests/e2e/test_failures.py`
-- [ ] T027 [US3] Step Functions に、失敗の経路を作る: エラーの種類に応じた `FAILED.json` の書き込み（`input_timeout`、`inference_failed`、`runner_timeout`）。対象: `lib/workflow.ts`
-- [ ] T028 [US3] runner が、検証の失敗を `error_code` つきで返し、decider の失敗（再試行のあと）を `inference_failed` で返すようにする。単体テスト（偽の呼び出しで、再試行と失敗を確かめる）も書く。対象: `src/req_coverage_runner/handler.py`、`tests/unit/test_decider_client.py`
-- [ ] T029 [US3] 重複起動の確認: 同じ実行フォルダに再度置いても、新しい実行が始まらず、前回のレポートが変わらない。対象: `tests/e2e/test_failures.py`
-- [ ] T030 [US3] 待機中の費用を確かめる: スタックと decider の構成に、常時動く資源がないことを、デプロイ後のリソース一覧で確認し、結果を `research.md` に記録する（SC-006）
+- [x] T026 [US3] E2E テストを書く（赤）: ヘッダを壊した CSV、`id` が重複した CSV、片方だけの CSV で、期待する `error_code` の `FAILED.json` ができる。対象: `tests/e2e/test_failures.py`
+- [x] T027 [US3] Step Functions に、失敗の経路を作る: エラーの種類に応じた `FAILED.json` の書き込み（`input_timeout`、`inference_failed`、`runner_timeout`）。対象: `lib/workflow.ts`
+- [x] T028 [US3] runner が、検証の失敗を `error_code` つきで返し、decider の失敗（再試行のあと）を `inference_failed` で返すようにする。単体テスト（偽の呼び出しで、再試行と失敗を確かめる）も書く。対象: `src/req_coverage_runner/handler.py`、`tests/unit/test_decider_client.py`
+- [x] T029 [US3] 重複起動の確認: 同じ実行フォルダに再度置いても、新しい実行が始まらず、前回のレポートが変わらない。対象: `tests/e2e/test_failures.py`
+- [x] T030 [US3] 待機中の費用を確かめる: スタックと decider の構成に、常時動く資源がないことを、デプロイ後のリソース一覧で確認し、結果を `research.md` に記録する（SC-006）
 
 **Checkpoint**: すべてのストーリーが動く
 

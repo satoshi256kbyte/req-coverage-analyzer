@@ -113,7 +113,8 @@ export class Workflow extends Construct {
       parameters: {
         Bucket: bucket.bucketName,
         Key: sfn.JsonPath.format('runs/{}/output/FAILED.json', runId),
-        Body: sfn.JsonPath.jsonToString(sfn.JsonPath.objectAt('$.failure')),
+        // オブジェクトのまま渡す。JSON の文字列にして渡すと、二重に符号化される
+        Body: sfn.JsonPath.objectAt('$.failure'),
         ContentType: 'application/json',
       },
       iamResources: [bucket.arnForObjects('runs/*/output/FAILED.json')],
