@@ -48,7 +48,7 @@ lint、書式、静的解析は、一般的なツールを使う。版は固定�
 - 構成は S3、EventBridge、Step Functions、Lambda とする。
 - 判定は、Strands Labs 公式の Lambda 版（`strands-decider` の `deploy/lambda`、CPU の arm64）を使う。版は固定する。
 - 秘密情報はコードやログに書かない。IAMは最小権限にする。
-- Lambda は Python（Lambda が対応する版）で書く。常時公開のURLは作らない。
+- Lambda は Python（Lambda が対応する版）で書く。認証なしの公開URLは作らない（公式の decider が作る、IAM認証つきのURLは使わない）。
 
 ## 開発の進め方
 
@@ -62,8 +62,9 @@ lint、書式、静的解析は、一般的なツールを使う。版は固定�
 この憲章は、他の取り決めより優先する。
 変更するときは、理由を記録し、版を上げる。
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-14
+**Version**: 2.0.1 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-14
 
 ## 改訂の記録
 
 - 2.0.0: 判定の計算を、GPUのEC2から、公式のLambda版（CPU）へ変更した。理由は、構成が小さく、止め忘れがなく、モデルの組み込みの失敗の恐れがないため。原則Vと技術の制約を書き換えた。
+- 2.0.1: 公開URLの制約を、「認証なしの公開URLは作らない」に直した（公式の decider が、IAM認証つきのURLを作るため）。

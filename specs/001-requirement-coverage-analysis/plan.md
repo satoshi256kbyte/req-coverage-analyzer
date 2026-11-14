@@ -30,7 +30,7 @@ runner は、CSV を検証し、要件ごとに、公式の Strands Decider の 
 
 **Performance Goals**: 100×100 件を30分以内（SC-002）。見積もりは 5〜10 分
 
-**Constraints**: 常時動く計算資源を置かない。各 Lambda に上限の時間を付ける。公開 URL を作らない
+**Constraints**: 常時動く計算資源を置かない。各 Lambda と Step Functions に上限の時間を付ける。認証なしの公開 URL を作らない
 
 **Scale/Scope**: 要件100件、テスト100件まで（最大1万組）。同時に走る実行は1つ
 
@@ -84,6 +84,7 @@ S3 runs/<run-id>/input/*.csv
 - 1組でも判定に失敗したら、実行全体を失敗にする（Clarifications）。
 - decider の呼び出しは、一時的なエラーに限り、3回まで再試行する。
 - runner が上限の時間を超えたら、Step Functions が `runner_timeout` として `FAILED.json` を書く。
+- Step Functions 全体にも、30分のタイムアウトを付ける。
 
 ## Project Structure
 
@@ -131,8 +132,8 @@ tests/
 | 項目 | 決定 |
 | --- | --- |
 | decider | 公式の `deploy/lambda` を、版（コミット）を固定して、別のスタックとしてデプロイする。モデルは `StrandsAgents/strands-decider-2B-qwen3.5-v1-2610`、リビジョンを固定、SnapStart は切る |
-| decider の呼び出し | runner が、関数の ARN を指定して直接呼ぶ（Function URL は使わない） |
-| 関数の ARN の渡し方 | CDK のコンテキスト（`deciderFunctionArn`）。スタックの出力から手で渡す |
+| decider の呼び出し | runner が、別名 `live` の ARN を指定して直接呼ぶ。公式のスタックが作る Function URL（IAM 認証つき）は使わない |
+| 関数の ARN の渡し方 | CDK のコンテキスト（`deciderFunctionArn`）。スタックの出力から手で渡す。別名 `live` の ARN を使う |
 | runner | Python 3.14、512 MB、上限15分、同時 25 本。boto3 の読み取りの待ち時間は 900 秒にする |
 | 判定 | 要件を state に、全テストを noul の質問にする。0.5 以上を「はい」とする |
 | 出力 | `report.csv`、`report.json`、`report.md` |
