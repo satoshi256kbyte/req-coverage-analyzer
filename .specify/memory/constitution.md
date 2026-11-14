@@ -1,50 +1,61 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# req-coverage-analyzer 憲章
 
-## Core Principles
+要件とE2Eテスト一覧を突き合わせ、AIで要件カバレッジを判定する検証用MVP。
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## 基本原則
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### I. 仕様が正である（仕様駆動）
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+実装の前に、Spec Kitで仕様（spec、plan、tasks）を書く。
+仕様にない機能は作らない。実装が仕様とずれたら、先に仕様を直す。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. MVPとして薄く保つ
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+検証（PoC）が目的である。過剰な抽象化や、使わない機能は作らない（YAGNI）。
+迷ったら、小さい方を選ぶ。
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### III. テストは E2E と業務ロジックの単体のみ
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+書くテストは次の2種類だけにする。
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- E2Eテスト
+- 業務ロジックの単体テスト（判定結果の集計、CSVの解釈など）
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+スクリプトや文書の中身を調べるテストは書かない。チェック用のシェルも作らない。
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+### IV. 一般的なツールを版固定で使う
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+lint、書式、静的解析は、一般的なツールを使う。版は固定する。
+自前の検査は、一般的なツールで代えられない理由を示せる場合だけ作る。
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### V. GPUの課金を最小にする（厳守）
+
+GPUのEC2は、推論の間だけ起動する。正常終了でも異常終了でも、必ず停止する。
+この停止はStep Functionsが受け持つ。例外は作らない。
+
+### VI. 判定は再確認できる形で残す
+
+要件とテストの組ごとに判定し、理由も残す。
+結果はS3にレポートとして置き、人が後から確かめられるようにする。
+
+## 技術の制約
+
+- IaCは AWS CDK（TypeScript）で書く。
+- 推論スクリプトは Python で書く。
+- NodeとPythonの依存は pnpm で一括管理する。ツールの版は `mise.toml` で固定する。
+- 構成は S3、EventBridge、Step Functions、SSM、EC2 とする。
+- 秘密情報はコードやログに書かない。IAMは最小権限にする。
+
+## 開発の進め方
+
+- 変更はブランチで行い、`main` へ直接 push しない。
+- コミットは、利用者が指示したときだけ作る。
+- 作業で作った一時ファイルとワークツリーは、終わったら消す。
+- 結果の確認は、終了コードで判定する。
+
+## ガバナンス
+
+この憲章は、他の取り決めより優先する。
+変更するときは、理由を記録し、版を上げる。
+
+**Version**: 1.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-14
