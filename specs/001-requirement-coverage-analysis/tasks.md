@@ -104,10 +104,10 @@
 
 ## Phase 6: Polish
 
-- [ ] T031 [P] README に、デプロイの手順（decider が先、次にスタック）と、実測の所要時間と費用を書く。対象: `README.md`
-- [ ] T032 `quickstart.md` の手順を、実際に最初から最後まで実行して確かめる
-- [ ] T033 `pnpm lint` を通す。対象: 全体
-- [ ] T034 一時ファイルと、検証用にデプロイしたリソースを片付ける（`pnpm cdk destroy`、decider の `cdk destroy`）
+- [x] T031 [P] README に、デプロイの手順（decider が先、次にスタック）と、実測の所要時間と費用を書く。対象: `README.md`
+- [x] T032 `quickstart.md` の手順を、実際に最初から最後まで実行して確かめる
+- [x] T033 `pnpm lint` を通す。対象: 全体
+- [x] T034 一時ファイルと、検証用にデプロイしたリソースを片付ける（`pnpm cdk destroy`、decider の `cdk destroy`）
 
 ---
 

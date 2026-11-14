@@ -67,6 +67,35 @@ mise install
 pnpm install
 ```
 
+## デプロイと使い方
+
+東京リージョン（ap-northeast-1）を前提とする。AWS の認証と、CDK のブートストラップが済んでいること。
+
+1. 公式の decider を、先にデプロイする（約8分）。手順と固定したコミットは、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。
+   出力の `FunctionArn`（別名 `live`）を控える。
+2. このスタックをデプロイする（約2分）。
+
+   ```sh
+   pnpm cdk deploy -c deciderFunctionArn=<控えた ARN>
+   ```
+
+3. 出力の `BucketName` のバケットに、`runs/<run-id>/input/requirements.csv` と `runs/<run-id>/input/e2e-tests.csv` を置く。
+4. `runs/<run-id>/output/` に、`report.md`、`report.csv`、`report.json`（失敗なら `FAILED.json`）が出る。
+   再実行は、新しい `<run-id>` で行う。形式は [契約](specs/001-requirement-coverage-analysis/contracts/) を参照する。
+5. 使い終わったら、`pnpm cdk destroy -c deciderFunctionArn=<ARN>` と、decider 側の `npx cdk destroy` で消す。
+
+### 実測（東京、2026-11-14）
+
+| 項目 | 結果 |
+| --- | --- |
+| サンプル（要件12件 × テスト15件） | 約 1 分（decider が温まっているとき） |
+| 要件100件 × テスト100件（冷えた decider） | 約 4 分 43 秒（30分の目標に収まる） |
+| 1回の実行の費用 | 約 $1〜4（冷えた環境が多いほど高い） |
+| 待機中の費用 | 月 約 $0.25（decider のイメージ） |
+| 判定の精度（サンプル） | 誤検出 0 件、見つけた割合 64%（詳細は [research](specs/001-requirement-coverage-analysis/research.md)） |
+
+「カバーされている」は信頼できる。「カバーされていない」は、見逃しの可能性があるため、人が確かめる。
+
 ## タスク
 
 ```sh
