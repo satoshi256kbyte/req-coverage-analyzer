@@ -13,44 +13,56 @@
 
 | 分類 | 内容 |
 | --- | --- |
-| AIモデル | Strands Decider 2B（AWS Strands Labs。分類と判断に特化した小さなモデル） |
-| 実行環境 | AWS Lambda（公式の Lambda 版、CPU の arm64） |
+| AIモデル | Strands Decider 2B（Strands Labs 提供。分類と判断に特化した小さなモデル） |
+| 実行環境 | AWS Lambda（Strands Decider 公式の AWS Lambda 版、CPU の arm64） |
 | オーケストレーション | AWS Step Functions、Amazon EventBridge |
-| ストレージ | Amazon S3 |
-| IaC | AWS CDK（TypeScript） |
+| ストレージ | Amazon Simple Storage Service（Amazon S3） |
+| IaC | AWS Cloud Development Kit（AWS CDK）（TypeScript） |
 | パッケージ管理 | pnpm 12（Node.js と Python を一括）、ツールの版は mise で固定 |
 
 ## 処理の流れ
 
+利用者は、**要件定義（CSV）とE2Eテスト一覧（CSV）を投入する**だけでよい。
+システムが、要件とE2Eテストを突き合わせ、**比較結果（どの要件がどのE2Eテストでカバーされているか）を返す**。
+
 常時動く計算資源はなく、使った時間だけ課金される。
 
 ```mermaid
-flowchart TD
-    U["利用者"] -->|"CSV を2つ置く"| IN["S3<br/>runs/run-id/input/"]
-    IN -->|"ファイル作成"| EB["EventBridge"]
-    EB --> SF["Step Functions"]
-    SF -->|"2つ揃うまで待つ"| SF
-    SF -->|"呼ぶ"| RN["Lambda: runner<br/>CSV の検証と集計"]
-    RN -->|"要件ごとに質問<br/>(同時 25 本)"| DC["Lambda: decider<br/>Strands Decider 2B"]
+flowchart LR
+    U1["利用者"] -->|"① 要件定義（CSV）と<br/>E2Eテスト一覧（CSV）を投入"| IN["Amazon S3<br/>runs/run-id/input/"]
+    IN -->|"② ファイルの作成を通知"| EB["Amazon EventBridge"]
+    EB -->|"③ 起動"| SF["AWS Step Functions<br/>2つの CSV が揃うまで待つ"]
+    SF -->|"④ 呼び出し"| RN["AWS Lambda（runner）<br/>CSV の検証と集計"]
+    RN -->|"⑤ 要件ごとに<br/>全テストを質問（同時 50 本）"| DC["AWS Lambda（decider）<br/>Strands Decider 2B"]
     DC -->|"はい／いいえ と確信度"| RN
-    RN -->|"成功"| OUT["S3<br/>runs/run-id/output/<br/>report.csv / json / md"]
+    RN -->|"⑥ 比較結果を保存"| OUT["Amazon S3<br/>runs/run-id/output/<br/>report.md、report.csv、report.json"]
+    OUT -->|"⑦ 比較結果を取得"| U2["利用者"]
     RN -.->|"失敗"| SF
-    SF -.->|"失敗を記録"| FAIL["S3<br/>output/FAILED.json"]
+    SF -.->|"失敗を記録"| FAIL["Amazon S3<br/>runs/run-id/output/FAILED.json"]
+    FAIL -.->|"失敗を確認"| U2
 ```
 
 | 段階 | 内容 |
 | --- | --- |
-| 入力 | 要件とE2Eテストの CSV を、実行フォルダに置く |
-| 起動 | EventBridge が検知し、Step Functions が始まる。2つ揃うまで最大10分待つ |
-| 判定 | runner が、要件1件ごとに、全テストについて「確かめているか」を decider に尋ねる |
-| 出力 | 成功なら `report.*`、失敗なら `FAILED.json` を置く |
+| ① 入力 | 要件定義（CSV）とE2Eテスト一覧（CSV）を、Amazon S3 の実行フォルダに置く |
+| ②③ 起動 | Amazon EventBridge が検知し、AWS Step Functions が始まる。2つ揃うまで最大10分待つ |
+| ④⑤ 判定 | runner が、要件1件ごとに、全テストについて「確かめているか」を decider に尋ねる |
+| ⑥⑦ 出力 | 成功なら比較結果（`report.*`）、失敗なら `FAILED.json` を、Amazon S3 に置く。利用者が取得する |
+
+### 比較結果
+
+要件定義とE2Eテスト一覧を突き合わせた結果として、次の内容が得られる。
+
+- 要件ごとに、どのE2Eテストでカバーされているか（確信度つき）。要件ごとの確度（高、中、低）
+- カバーされていない要件（人が確かめる）
+- どの要件にも対応しなかったE2Eテスト（見逃しか、要件にない動作のテストかを確かめる）
 
 ## 構成
 
 | 場所 | 内容 |
 | --- | --- |
 | `bin/`, `lib/` | AWS CDK（TypeScript） |
-| `src/` | 判定用の Lambda（Python） |
+| `src/` | 判定用の AWS Lambda 関数（Python） |
 | `tests/` | 単体テスト（業務ロジック）と E2E |
 | `specs/` | 仕様、設計、サンプル |
 | `.specify/` | Spec Kit（憲章、テンプレート） |
@@ -69,9 +81,9 @@ pnpm install
 
 ## デプロイと使い方
 
-東京リージョン（ap-northeast-1）を前提とする。AWS の認証と、CDK のブートストラップが済んでいること。
+東京リージョン（ap-northeast-1）を前提とする。AWS の認証と、AWS CDK のブートストラップが済んでいること。
 
-1. 公式の decider を、先にデプロイする（約8分）。手順と固定したコミットは、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。
+1. Strands Decider 公式の AWS Lambda 版（decider）を、先にデプロイする（約8分）。手順と固定したコミットは、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。
    出力の `FunctionArn`（別名 `live`）を控える。
 2. このスタックをデプロイする（約2分）。
 
@@ -79,8 +91,8 @@ pnpm install
    pnpm cdk deploy -c deciderFunctionArn=<控えた ARN>
    ```
 
-3. 出力の `BucketName` のバケットに、`runs/<run-id>/input/requirements.csv` と `runs/<run-id>/input/e2e-tests.csv` を置く。
-4. `runs/<run-id>/output/` に、`report.md`、`report.csv`、`report.json`（失敗なら `FAILED.json`）が出る。
+3. 出力の `BucketName` の Amazon S3 バケットに、`runs/<run-id>/input/requirements.csv`（要件定義）と `runs/<run-id>/input/e2e-tests.csv`（E2Eテスト一覧）を置く。
+4. `runs/<run-id>/output/` に、比較結果の `report.md`、`report.csv`、`report.json`（失敗なら `FAILED.json`）が出る。
    再実行は、新しい `<run-id>` で行う。形式は [契約](specs/001-requirement-coverage-analysis/contracts/) を参照する。
 5. 使い終わったら、`pnpm cdk destroy -c deciderFunctionArn=<ARN>` と、decider 側の `npx cdk destroy` で消す。
 
@@ -91,7 +103,7 @@ pnpm install
 | サンプル（要件12件 × テスト15件） | 約 1 分（decider が温まっているとき） |
 | 要件100件 × テスト100件（冷えた decider） | 約 4 分 43 秒（30分の目標に収まる） |
 | 1回の実行の費用 | 約 $1〜4（冷えた環境が多いほど高い） |
-| 待機中の費用 | 月 約 $0.25（decider のイメージ） |
+| 待機中の費用 | 月 約 $0.25（decider のコンテナイメージを、Amazon Elastic Container Registry（Amazon ECR）に置く分） |
 | 判定の精度（サンプル） | 誤検出 0 件、見つけた割合 64%（詳細は [research](specs/001-requirement-coverage-analysis/research.md)） |
 
 「カバーされている」は信頼できる。「カバーされていない」は、見逃しの可能性があるため、人が確かめる。
@@ -106,11 +118,11 @@ pnpm install
 ## タスク
 
 ```sh
-pnpm build      # CDK の型の検査
+pnpm build      # AWS CDK の型の検査
 pnpm cdk synth -c deciderFunctionArn=<decider の別名 live の ARN>  # テンプレートの生成
 pnpm lint       # ruff、tsc、markdownlint-cli2
 pnpm test       # 単体テスト（業務ロジック）
-pnpm test:e2e   # E2E（デプロイ済みのスタックが必要。環境変数 E2E_BUCKET にバケット名を渡す）
+pnpm test:e2e   # E2E（デプロイ済みのスタックが必要。環境変数 E2E_BUCKET と E2E_STATE_MACHINE_ARN を渡す）
 ```
 
 デプロイの手順は、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。
