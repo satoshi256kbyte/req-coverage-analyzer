@@ -70,8 +70,10 @@ pnpm install
 ## タスク
 
 ```sh
-pnpm build    # CDKのビルド
-pnpm cdk synth
+pnpm build      # CDK の型の検査
+pnpm cdk synth  # テンプレートの生成
+pnpm lint       # ruff、tsc、markdownlint-cli2
+pnpm test       # 単体テスト（業務ロジック）
 ```
 
 デプロイの手順は、[quickstart](specs/001-requirement-coverage-analysis/quickstart.md) を参照する。

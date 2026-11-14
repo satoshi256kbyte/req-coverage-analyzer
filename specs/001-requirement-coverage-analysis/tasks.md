@@ -20,12 +20,12 @@
 
 **Purpose**: `cdk init` の既定の雛形を、憲章に合わせて整える
 
-- [ ] T001 `test/`、`jest.config.js`、jest 関連の依存を削除する（憲章 III）。対象: `test/`、`jest.config.js`、`package.json`
-- [ ] T002 `lib/infra-stack.ts` を、plan の構成（`storage.ts`、`runner.ts`、`workflow.ts`）に分ける土台に置き換える。対象: `lib/infra-stack.ts`、`bin/infra.ts`
-- [ ] T003 [P] Python の開発用の依存（pytest、ruff）を、版を固定して追加する。対象: `pyproject.toml`、`pylock.toml`
-- [ ] T004 [P] Markdown の lint（markdownlint-cli2）を、版を固定して追加し、`pnpm lint` を用意する。対象: `package.json`
-- [ ] T005 [P] `pnpm lint`（ruff、tsc、markdownlint-cli2）を整える。自前のチェック用シェルは作らない。対象: `package.json`、`pyproject.toml`
-- [ ] T006 Python の入口（`src/req_coverage_runner/__init__.py` の雛形）を、`handler.py` に置き換える。古い `pnpm runner` のスクリプトも `package.json` から消す。対象: `src/req_coverage_runner/handler.py`、`package.json`
+- [x] T001 `test/`、`jest.config.js`、jest 関連の依存を削除する（憲章 III）。対象: `test/`、`jest.config.js`、`package.json`
+- [x] T002 `lib/infra-stack.ts` を、plan の構成（`storage.ts`、`runner.ts`、`workflow.ts`）に分ける土台に置き換える。対象: `lib/infra-stack.ts`、`bin/infra.ts`
+- [x] T003 [P] Python の開発用の依存（pytest、ruff）を、版を固定して追加する。対象: `pyproject.toml`、`pylock.toml`
+- [x] T004 [P] Markdown の lint（markdownlint-cli2）を、版を固定して追加し、`pnpm lint` を用意する。対象: `package.json`
+- [x] T005 [P] `pnpm lint`（ruff、tsc、markdownlint-cli2）を整える。自前のチェック用シェルは作らない。対象: `package.json`、`pyproject.toml`
+- [x] T006 Python の入口（`src/req_coverage_runner/__init__.py` の雛形）を、`handler.py` に置き換える。古い `pnpm runner` のスクリプトも `package.json` から消す。対象: `src/req_coverage_runner/handler.py`、`package.json`
 
 ---
 

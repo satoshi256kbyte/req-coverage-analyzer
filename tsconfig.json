@@ -27,12 +27,15 @@
     "noEmit": true,
     "isolatedModules": true,
     "types": [
-      "jest",
       "node"
     ]
   },
   "exclude": [
     "node_modules",
     "cdk.out"
+  ],
+  "include": [
+    "bin",
+    "lib"
   ]
 }
