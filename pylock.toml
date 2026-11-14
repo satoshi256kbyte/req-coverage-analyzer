@@ -1,0 +1,10 @@
+lock-version = "1.0"
+created-by = "pnpm"
+environments = ["implementation_name == 'cpython' and platform_machine == 'aarch64' and python_full_version == '3.14.10' and python_version == '3.14' and sys_platform == 'linux'"]
+requires-python = ">=3.14"
+packages = []
+
+[tool.pnpm]
+requirements = []
+python-versions = ["3.14.10"]
+index = "https://pypi.org/simple/"
