@@ -1,4 +1,6 @@
 import * as cdk from 'aws-cdk-lib/core';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
@@ -150,6 +152,23 @@ export class Workflow extends Construct {
       definitionBody: sfn.DefinitionBody.fromChainable(extract.next(claim).next(initAttempt).next(listInputs)),
       // 入力の待ち（最大10分）と runner（最大15分）に、余裕を足した全体の上限
       timeout: cdk.Duration.minutes(30),
+    });
+
+    // 入力の CSV が置かれたら、Step Functions を起動する（2つのファイルで、それぞれ1回）。
+    // 重複した起動は、Claim の状態で取り除く
+    new events.Rule(this, 'InputCreated', {
+      description: 'runs/<run-id>/input/ に、要件かE2Eテストの CSV が置かれたら、判定を始める',
+      eventPattern: {
+        source: ['aws.s3'],
+        detailType: ['Object Created'],
+        detail: {
+          bucket: { name: [bucket.bucketName] },
+          object: {
+            key: [{ wildcard: 'runs/*/input/requirements.csv' }, { wildcard: 'runs/*/input/e2e-tests.csv' }],
+          },
+        },
+      },
+      targets: [new targets.SfnStateMachine(this.stateMachine)],
     });
   }
 }
