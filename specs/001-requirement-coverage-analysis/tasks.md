@@ -37,11 +37,11 @@
 
 - [ ] T007 公式の decider（`strands-labs/strands-decider` の `deploy/lambda`）を、固定したコミットでデプロイし、別名 `live` の ARN を控える。SnapStart は切る（research D4）。成果物: 手順を `quickstart.md` に反映
 - [ ] T008 decider に、要件1件と100個のテストの質問を直接送り、所要時間、1回の上限、日本語の判定の質を確かめる。decider の別名 `live` の ARN で、直接呼べることも確かめる。結果を `research.md` の「未確認」に記録する。成果物: `research.md`
-- [ ] T009 [P] 単体テスト（赤）: CSV の検証。ヘッダ違い、空の値、`id` の重複、0件、101件、UTF-8 以外、BOM つき。対象: `tests/unit/test_csv_io.py`
-- [ ] T010 [P] 単体テスト（赤）: 集計。1件以上の「はい」でカバー済み、0件で未カバー、`score` の降順、しきい値 0.5 の境界。対象: `tests/unit/test_coverage.py`
-- [ ] T011 [P] `csv_io.py` を実装する（T009 を通す）。対象: `src/req_coverage_runner/csv_io.py`
-- [ ] T012 [P] `coverage.py` を実装する（T010 を通す）。対象: `src/req_coverage_runner/coverage.py`
-- [ ] T013 [P] S3 バケット（暗号化、公開しない、EventBridge への通知を有効にする、`cdk destroy` で中身ごと消える設定）を作る。対象: `lib/storage.ts`
+- [x] T009 [P] 単体テスト（赤）: CSV の検証。ヘッダ違い、空の値、`id` の重複、0件、101件、UTF-8 以外、BOM つき。対象: `tests/unit/test_csv_io.py`
+- [x] T010 [P] 単体テスト（赤）: 集計。1件以上の「はい」でカバー済み、0件で未カバー、`score` の降順、しきい値 0.5 の境界。対象: `tests/unit/test_coverage.py`
+- [x] T011 [P] `csv_io.py` を実装する（T009 を通す）。対象: `src/req_coverage_runner/csv_io.py`
+- [x] T012 [P] `coverage.py` を実装する（T010 を通す）。対象: `src/req_coverage_runner/coverage.py`
+- [x] T013 [P] S3 バケット（暗号化、公開しない、EventBridge への通知を有効にする、`cdk destroy` で中身ごと消える設定）を作る。対象: `lib/storage.ts`
 
 **Checkpoint**: 前提が確かめられ、業務ロジックの単体テストが通る
 
