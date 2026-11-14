@@ -66,7 +66,7 @@
 - [x] T019 [US1] Step Functions を作る: 実行の印の条件つき書き込み、`input/` の一覧で2ファイルを待つ（最大10分）、runner の呼び出し。全体のタイムアウト（30分）を付ける。対象: `lib/workflow.ts`
 - [x] T020 [US1] EventBridge の規則を作る（`input/` 配下の2ファイルの作成で起動）。対象: `lib/workflow.ts`
 - [x] T021 [US1] スタックを組み立て、decider の ARN をコンテキストで受け取る。`pnpm cdk synth` を通す。対象: `lib/infra-stack.ts`、`bin/infra.ts`
-- [ ] T022 [US1] デプロイして、T014 の E2E を通す。未確認の項目（条件つき書き込み、15分に収まるか）の結果を `research.md` に記録する
+- [x] T022 [US1] デプロイして、T014 の E2E を通す。未確認の項目（条件つき書き込み、15分に収まるか）の結果を `research.md` に記録する
 
 **Checkpoint**: US1 が単独で動き、MVP として使える
 
