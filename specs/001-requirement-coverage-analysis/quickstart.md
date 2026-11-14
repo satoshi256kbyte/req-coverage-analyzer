@@ -14,7 +14,7 @@
 
    - 公式のリポジトリ `strands-labs/strands-decider` を、固定したコミットで取得する。
    - `deploy/lambda` で、`npm install` と `npx cdk deploy` を行う。SnapStart は切ったままにする。
-   - スタックの出力から、関数の ARN を控える。
+   - スタックの出力から、別名 `live` の ARN を控える。
 
 2. 私たちのスタックをデプロイする。
 
@@ -43,7 +43,7 @@
 ## 失敗の確かめ方
 
 - ヘッダを壊した CSV を置く。`output/FAILED.json` ができる。decider は呼ばれない。
-- 存在しない関数の ARN で runner を動かす。`FAILED.json`（`inference_failed`）ができる。
+- decider の呼び出しの失敗（`inference_failed`）は、デプロイし直さずに確かめるため、単体テスト（`tests/unit/test_decider_client.py`）で確かめる。
 
 ## 後片付け
 
