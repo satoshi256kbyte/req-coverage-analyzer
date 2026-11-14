@@ -5,7 +5,7 @@ import io
 import json
 from dataclasses import dataclass
 
-from req_coverage_runner.coverage import THRESHOLD, Coverage, Judgment, judge
+from req_coverage_runner.coverage import THRESHOLD, Coverage, Judgment, Level, judge
 from req_coverage_runner.csv_io import Row
 
 
@@ -15,6 +15,15 @@ class RunMeta:
     model: str
     started_at: str
     finished_at: str
+
+
+_LEVEL_LABEL: dict[Level, str] = {"high": "高", "medium": "中", "low": "低", "needs_review": "要確認"}
+
+
+def _confidence_label(c: Coverage) -> str:
+    if c.confidence is None:
+        return _LEVEL_LABEL["needs_review"]
+    return f"{c.confidence:.2f}（{_LEVEL_LABEL[c.level]}）"
 
 
 def render_csv(requirements: list[Row], tests: list[Row], judgments: list[Judgment]) -> str:
@@ -49,6 +58,8 @@ def render_json(meta: RunMeta, requirements: list[Row], tests: list[Row], covera
                 "id": c.requirement_id,
                 "description": by_id[c.requirement_id].description,
                 "covered": c.covered,
+                "confidence": None if c.confidence is None else round(c.confidence, 4),
+                "level": c.level,
                 "matched_count": c.matched_count,
                 "matched": [
                     {"test_id": m.test_id, "score": round(m.score, 4), "confidence": round(m.confidence, 4)}
@@ -81,9 +92,9 @@ def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], co
         f"- 実行: {meta.started_at} 〜 {meta.finished_at}",
         f"- 要件: {len(requirements)}件、E2Eテスト: {len(tests)}件",
         f"- 「はい」のしきい値: {THRESHOLD}",
-        f"- カバー済み: {len(covered)}件、未カバー: {len(uncovered)}件",
+        f"- カバー済み: {len(covered)}件、未カバー（要確認）: {len(uncovered)}件",
         "",
-        "## 未カバーの要件",
+        "## 未カバーの要件（要確認）",
         "",
     ]
     if uncovered:
@@ -91,10 +102,10 @@ def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], co
     else:
         lines.append("なし")
     lines += ["", "## 要件ごとの結果", ""]
-    lines += ["| 要件 | 説明 | カバー | 対応するテスト（確信度） |", "| --- | --- | --- | --- |"]
+    lines += ["| 要件 | 説明 | カバー | 確度 | 対応するテスト（確信度） |", "| --- | --- | --- | --- | --- |"]
     for c in coverage:
         matched = "<br>".join(f"{_cell(m.test_id)}（{m.confidence:.2f}）" for m in c.matched) or "-"
         mark = "○" if c.covered else "×"
         description = _cell(by_id[c.requirement_id].description)
-        lines.append(f"| {_cell(c.requirement_id)} | {description} | {mark} | {matched} |")
+        lines.append(f"| {_cell(c.requirement_id)} | {description} | {mark} | {_confidence_label(c)} | {matched} |")
     return "\n".join(lines) + "\n"

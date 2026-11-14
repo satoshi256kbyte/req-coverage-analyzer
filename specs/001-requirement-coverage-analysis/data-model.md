@@ -38,6 +38,8 @@
 | `covered` | 真偽 | `yes` の判定が1件以上なら真 |
 | `matched_test_ids` | 文字列の列 | `verdict` が `yes` のテストの `id`（`score` の降順） |
 | `matched_count` | 整数 | `matched_test_ids` の数 |
+| `confidence` | 数値または null | カバー済みなら、一致したテストの最高の確信度。未カバーは null |
+| `level` | `high`、`medium`、`low`、`needs_review` | 確度が 0.9 以上で high、0.7 以上で medium、それ未満で low。未カバーは needs_review |
 
 ### 実行（Run）
 

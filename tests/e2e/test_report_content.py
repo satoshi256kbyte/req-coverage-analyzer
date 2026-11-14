@@ -24,3 +24,21 @@ def test_対応するテストに確信度がつく(sample_run):
         for m in req["matched"]:
             assert m["score"] >= 0.5
             assert 0.5 <= m["confidence"] <= 1.0
+
+
+def test_要件ごとの確度が付き_未カバーは要確認になる(sample_run):
+    for req in sample_run.json["requirements"]:
+        if req["covered"]:
+            # 確度は、一致したテストの最高の確信度
+            assert req["confidence"] == max(m["confidence"] for m in req["matched"])
+            assert req["level"] in {"high", "medium", "low"}
+        else:
+            assert req["confidence"] is None
+            assert req["level"] == "needs_review"
+
+    table = sample_run.markdown.split("## 要件ごとの結果")[1]
+    assert "| 要件 | 説明 | カバー | 確度 | 対応するテスト（確信度） |" in table
+    rows = {line.split("|")[1].strip(): line for line in table.splitlines() if line.startswith("| REQ-")}
+    assert "要確認" in rows["REQ-008"]
+    assert "要確認" in rows["REQ-012"]
+    assert "要確認" not in rows["REQ-009"]

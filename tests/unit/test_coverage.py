@@ -67,3 +67,30 @@ def test_範囲外のscoreは失敗する():
         judge(1.1)
     with pytest.raises(ValueError):
         judge(-0.1)
+
+
+@pytest.mark.parametrize(
+    ("score", "level"),
+    [(1.0, "high"), (0.9, "high"), (0.8999, "medium"), (0.7, "medium"), (0.6999, "low"), (0.5, "low")],
+)
+def test_カバー済みの要件の確度と札は最高の判定で決まる(score, level):
+    js = _scores(R1={"T1": score, "T2": 0.1}, R2={"T1": 0, "T2": 0}, R3={"T1": 0, "T2": 0})
+    first = build_coverage(REQS, TESTS, js)[0]
+    assert first.confidence == pytest.approx(score)
+    assert first.level == level
+
+
+def test_確度は一致したテストの最高のscoreで_複数あっても最高を使う():
+    js = _scores(R1={"T1": 0.6, "T2": 0.95}, R2={"T1": 0, "T2": 0}, R3={"T1": 0, "T2": 0})
+    first = build_coverage(REQS, TESTS, js)[0]
+    assert first.confidence == pytest.approx(0.95)
+    assert first.level == "high"
+
+
+def test_未カバーの要件は確度を出さず要確認にする():
+    js = _scores(R1={"T1": 0, "T2": 0}, R2={"T1": 0.49, "T2": 0.1}, R3={"T1": 0, "T2": 0})
+    cov = build_coverage(REQS, TESTS, js)
+    for c in cov:
+        assert not c.covered
+        assert c.confidence is None
+        assert c.level == "needs_review"

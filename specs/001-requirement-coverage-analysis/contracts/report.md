@@ -32,6 +32,8 @@
       "id": "REQ-001",
       "description": "…",
       "covered": true,
+      "confidence": 0.9312,
+      "level": "high",
       "matched_count": 2,
       "matched": [
         { "test_id": "E2E-001", "score": 0.9312, "confidence": 0.9312 }
@@ -43,11 +45,15 @@
 ```
 
 - `requirements` の並びは、入力の順。
+- `confidence` は、カバー済みの要件では、`matched` の最高の `confidence`。未カバーの要件では、`null`。
+- `level` は、`confidence` が 0.9 以上で `high`、0.7 以上で `medium`、それ未満で `low`。未カバーの要件は、`needs_review`（要確認）。
 - `matched` は、`score` の降順。
 - 全組の判定は `report.csv` にある。
 
 ## report.md（人が読む）
 
 - 先頭に、実行の情報と、カバー済みと未カバーの件数を書く。
-- 要件ごとの表: `id`、説明、カバーの有無、対応するテスト（確信度つき）。
-- 未カバーの要件は、見つけやすいよう、先にまとめて書く。
+- 要件ごとの表: `id`、説明、カバーの有無、確度（`0.93（高）` の形。未カバーは「要確認」）、対応するテスト（確信度つき）。
+- 未カバーの要件は、「要確認」として、見つけやすいよう、先にまとめて書く。
+
+`report.csv` は、組ごとの判定だけで、要件ごとの確度は含まない。
