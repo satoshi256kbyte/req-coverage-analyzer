@@ -37,6 +37,12 @@
 4. Step Functions の実行を確かめる（成功まで、数分から十数分）。
 5. `runs/<run-id>/output/report.md` を開く。
 
+自動で確かめるなら、バケット名を渡して、E2E を実行する（約3分。片方だけのテストは、10分待つ）。
+
+```sh
+E2E_BUCKET=<BucketName> pnpm test:e2e
+```
+
 ## 期待する結果
 
 | 確認 | 期待 |
