@@ -18,6 +18,8 @@ export class Storage extends Construct {
       // 検証用。`cdk destroy` で、中身ごと消える
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      // 入力とレポートは、30日で消える（要件の文を、長く残さない）
+      lifecycleRules: [{ prefix: 'runs/', expiration: cdk.Duration.days(30) }],
     });
   }
 }

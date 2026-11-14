@@ -29,7 +29,14 @@ RETRYABLE_CODES = {
 
 
 class DeciderError(Exception):
-    """decider の呼び出しが、再試行しても失敗した。"""
+    """decider の呼び出しが、再試行しても失敗した。
+
+    文面には、ARN などの内部の情報が入りうる。利用者に見える場所（FAILED.json）には、出さない。
+    """
+
+    def __init__(self, message: str, requirement_id: str | None = None) -> None:
+        super().__init__(message)
+        self.requirement_id = requirement_id
 
 
 def build_request(requirement: Row, tests: list[Row]) -> dict[str, Any]:
@@ -73,20 +80,21 @@ def judge_requirement(
         try:
             body = invoke(payload)
             break
-        except DeciderError:
+        except DeciderError as e:
+            e.requirement_id = e.requirement_id or requirement.id
             raise
         except Exception as e:
             if not _is_transient(e) or attempt == MAX_RETRIES:
-                raise DeciderError(f"{requirement.id}: decider を呼べませんでした: {e}") from e
+                raise DeciderError(f"{requirement.id}: decider を呼べませんでした: {e}", requirement.id) from e
             sleep(2**attempt)
 
     answers = body.get("answers")
     if not isinstance(answers, dict):
-        raise DeciderError(f"{requirement.id}: decider の答えが読めません: {str(body)[:300]}")
+        raise DeciderError(f"{requirement.id}: decider の答えが読めません: {str(body)[:300]}", requirement.id)
     judgments: list[Judgment] = []
     for test in tests:
         answer = answers.get(test.id)
         if not isinstance(answer, dict) or not isinstance(answer.get("noul"), int | float):
-            raise DeciderError(f"{requirement.id} × {test.id}: 答えがありません")
+            raise DeciderError(f"{requirement.id} × {test.id}: 答えがありません", requirement.id)
         judgments.append(Judgment(requirement.id, test.id, float(answer["noul"])))
     return judgments

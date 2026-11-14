@@ -23,11 +23,15 @@ export class Workflow extends Construct {
 
     // 1. EventBridge のイベント（S3 の Object Created）から、run-id を取り出す。
     //    キーは `runs/<run-id>/input/<name>`
+    const keyParts = sfn.JsonPath.stringSplit(sfn.JsonPath.stringAt('$.detail.object.key'), '/');
     const extract = new sfn.Pass(this, 'ExtractRunId', {
       parameters: {
-        run_id: sfn.JsonPath.arrayGetItem(sfn.JsonPath.stringSplit(sfn.JsonPath.stringAt('$.detail.object.key'), '/'), 1),
+        run_id: sfn.JsonPath.arrayGetItem(keyParts, 1),
+        parts: sfn.JsonPath.arrayLength(keyParts),
       },
     });
+    // EventBridge の `*` は `/` にも一致する。`runs/<run-id>/input/<name>` の4階層だけを受ける
+    const ignored = new sfn.Succeed(this, 'IgnoredKey');
 
     // 2. 実行の印を、条件つきで書く。すでにあれば、別の実行が担当しているので、何もせずに終わる
     const claim = new tasks.CallAwsService(this, 'Claim', {
@@ -43,6 +47,8 @@ export class Workflow extends Construct {
       iamAction: 's3:PutObject',
       resultPath: sfn.JsonPath.DISCARD,
     });
+    // 同時の書き込みの競合（409）などは、少し待って再試行する。412 も再試行されるが、最後は下で拾う
+    claim.addRetry({ errors: ['States.ALL'], interval: cdk.Duration.seconds(2), maxAttempts: 3, backoffRate: 2 });
     const alreadyClaimed = new sfn.Succeed(this, 'AlreadyClaimed');
     const claimFailed = new sfn.Fail(this, 'ClaimFailed', { error: 'ClaimFailed', cause: '実行の印を書けませんでした' });
     claim.addCatch(
@@ -73,6 +79,11 @@ export class Workflow extends Construct {
       iamAction: 's3:ListBucket',
       resultPath: '$.list',
     });
+    const validKey = new sfn.Choice(this, 'IsValidKey')
+      .when(sfn.Condition.numberEquals('$.parts', 4), claim)
+      .otherwise(ignored);
+    claim.next(initAttempt);
+    initAttempt.next(listInputs);
     const wait = new sfn.Wait(this, 'WaitForInputs', { time: sfn.WaitTime.duration(cdk.Duration.seconds(30)) });
     const nextAttempt = new sfn.Pass(this, 'NextAttempt', {
       parameters: {
@@ -141,16 +152,19 @@ export class Workflow extends Construct {
       .otherwise(internalError);
     run.next(afterRun);
 
-    const ready = new sfn.Choice(this, 'InputsReady')
-      .when(sfn.Condition.isPresent('$.list.Contents[1]'), run)
-      .when(sfn.Condition.numberGreaterThanEquals('$.attempt', 20), inputTimeout)
+    // 2つの CSV の名前が、どちらも揃っているかを見る（別のファイルが2つあっても、揃ったとは見なさない）
+    const has = (name: string) =>
+      `$count($states.input.list.Contents[$contains(Key, /\\/input\\/${name.replace('.', '\\.')}$/)]) > 0`;
+    const ready = new sfn.Choice(this, 'InputsReady', { queryLanguage: sfn.QueryLanguage.JSONATA })
+      .when(sfn.Condition.jsonata(`{% ${has('requirements.csv')} and ${has('e2e-tests.csv')} %}`), run)
+      .when(sfn.Condition.jsonata('{% $states.input.attempt >= 20 %}'), inputTimeout)
       .otherwise(wait);
     wait.next(nextAttempt);
     nextAttempt.next(listInputs);
     listInputs.next(ready);
 
     this.stateMachine = new sfn.StateMachine(this, 'StateMachine', {
-      definitionBody: sfn.DefinitionBody.fromChainable(extract.next(claim).next(initAttempt).next(listInputs)),
+      definitionBody: sfn.DefinitionBody.fromChainable(extract.next(validKey)),
       // 入力の待ち（最大10分）と runner（最大15分）に、余裕を足した全体の上限
       timeout: cdk.Duration.minutes(30),
     });

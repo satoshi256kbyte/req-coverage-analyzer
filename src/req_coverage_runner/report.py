@@ -62,8 +62,12 @@ def render_json(meta: RunMeta, requirements: list[Row], tests: list[Row], covera
     return json.dumps(body, ensure_ascii=False, indent=2) + "\n"
 
 
+_MARKDOWN_SPECIAL = str.maketrans({c: f"\\{c}" for c in "\\|<>[]!`"})
+
+
 def _cell(text: str) -> str:
-    return text.replace("|", "\\|").replace("\r", " ").replace("\n", " ")
+    """利用者の文を、Markdown の表や一覧に、そのまま文字として出す。"""
+    return text.replace("\r", " ").replace("\n", " ").translate(_MARKDOWN_SPECIAL)
 
 
 def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], coverage: list[Coverage]) -> str:
@@ -83,13 +87,14 @@ def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], co
         "",
     ]
     if uncovered:
-        lines += [f"- {c.requirement_id}: {_cell(by_id[c.requirement_id].description)}" for c in uncovered]
+        lines += [f"- {_cell(c.requirement_id)}: {_cell(by_id[c.requirement_id].description)}" for c in uncovered]
     else:
         lines.append("なし")
     lines += ["", "## 要件ごとの結果", ""]
     lines += ["| 要件 | 説明 | カバー | 対応するテスト（確信度） |", "| --- | --- | --- | --- |"]
     for c in coverage:
-        matched = "<br>".join(f"{m.test_id}（{m.confidence:.2f}）" for m in c.matched) or "-"
+        matched = "<br>".join(f"{_cell(m.test_id)}（{m.confidence:.2f}）" for m in c.matched) or "-"
         mark = "○" if c.covered else "×"
-        lines.append(f"| {c.requirement_id} | {_cell(by_id[c.requirement_id].description)} | {mark} | {matched} |")
+        description = _cell(by_id[c.requirement_id].description)
+        lines.append(f"| {_cell(c.requirement_id)} | {description} | {mark} | {matched} |")
     return "\n".join(lines) + "\n"

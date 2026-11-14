@@ -10,10 +10,11 @@
 - 想定外の例外は、そのまま投げる（Step Functions が受ける）
 """
 
+import logging
 import os
 import re
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from typing import Any
 
@@ -21,9 +22,11 @@ import boto3
 from botocore.exceptions import ClientError
 
 from req_coverage_runner.coverage import Judgment, build_coverage
-from req_coverage_runner.csv_io import CsvError, Row, parse_csv
+from req_coverage_runner.csv_io import MAX_FILE_BYTES, CsvError, Row, parse_csv
 from req_coverage_runner.decider_client import DeciderError, Invoker, judge_requirement, make_invoker
 from req_coverage_runner.report import RunMeta, render_csv, render_json, render_markdown
+
+logger = logging.getLogger(__name__)
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 DEFAULT_CONCURRENCY = 50
@@ -36,27 +39,33 @@ def _now() -> str:
 def _read_rows(s3: Any, bucket: str, run_id: str, name: str) -> list[Row]:
     key = f"runs/{run_id}/input/{name}"
     try:
-        data = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
+        response = s3.get_object(Bucket=bucket, Key=key)
     except ClientError as e:
         if e.response.get("Error", {}).get("Code") == "NoSuchKey":
             raise CsvError("input_timeout", f"{name}: 入力がありません") from e
         raise
-    return parse_csv(data, name)
+    # 大きなファイルは、本文を読む前に断る
+    if response.get("ContentLength", 0) > MAX_FILE_BYTES:
+        raise CsvError("file_too_large", f"{name}: {MAX_FILE_BYTES // 1024} KB を超えています")
+    return parse_csv(response["Body"].read(), name)
 
 
 def _judge_all(invoke: Invoker, requirements: list[Row], tests: list[Row], concurrency: int) -> list[Judgment]:
-    """要件ごとに decider を呼ぶ。1件でも失敗したら、残りを取り消して、失敗を投げる。"""
-    with ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [pool.submit(judge_requirement, invoke, r, tests) for r in requirements]
-        judgments: list[Judgment] = []
-        try:
-            for future in futures:
-                judgments += future.result()
-        except BaseException:
-            for future in futures:
-                future.cancel()
-            raise
-    return judgments
+    """要件ごとに decider を呼ぶ。1件でも失敗したら、すぐに気づき、始まっていない呼び出しを取り消す。"""
+    pool = ThreadPoolExecutor(max_workers=concurrency)
+    futures = [pool.submit(judge_requirement, invoke, r, tests) for r in requirements]
+    try:
+        # 提出順ではなく、最初に失敗した時点で戻る
+        wait(futures, return_when=FIRST_EXCEPTION)
+        for future in futures:
+            future.cancel()
+        for future in futures:
+            if future.done() and not future.cancelled() and future.exception() is not None:
+                raise future.exception()  # type: ignore[misc]
+        return [j for future in futures for j in future.result()]
+    finally:
+        # 実行中の呼び出しは待たない。Lambda の終了とともに捨てられる
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 def run_analysis(
@@ -84,7 +93,14 @@ def run_analysis(
     except CsvError as e:
         return {"status": "failed", "error_code": e.code, "message": e.message}
     except DeciderError as e:
-        return {"status": "failed", "error_code": "inference_failed", "message": str(e)}
+        # 詳細（ARN などを含みうる）は、ログにだけ出す。FAILED.json には、固定の文言を書く
+        logger.error("decider の呼び出しが失敗しました: %s", e)
+        where = f"（要件 {e.requirement_id}）" if e.requirement_id else ""
+        return {
+            "status": "failed",
+            "error_code": "inference_failed",
+            "message": f"decider の呼び出しに失敗しました{where}。詳細は runner のログを確認してください",
+        }
 
     coverage = build_coverage(requirements, tests, judgments)
     meta = RunMeta(run_id, ", ".join(sorted(models)) or "unknown", started_at, now())
