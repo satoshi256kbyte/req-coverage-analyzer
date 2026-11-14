@@ -295,19 +295,16 @@ flowchart LR
 
 # 5. Kiro Crew の指示の流れ
 
-```mermaid
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','primaryColor':'#ffffff','primaryBorderColor':'#333333','primaryTextColor':'#000000','lineColor':'#333333','textColor':'#000000','edgeLabelBackground':'#ffffff','secondaryColor':'#ffffff','tertiaryColor':'#ffffff'}}}%%
-flowchart LR
-    A[AWS MCP設定] --> B[Spec Kit<br/>インストール]
-    B --> C[プロダクト概要投入]
-    C --> D[constitution<br/>憲章]
-    D --> E[specify<br/>仕様]
-    E --> F[clarify<br/>曖昧点の確認]
-    F --> G[plan<br/>設計]
-    G --> H[tasks<br/>作業分解]
-    H --> I[analyze<br/>食い違い点検]
-    I --> J[implement<br/>実装とデプロイ]
-```
+- AWS MCP設定: 東京リージョンの aws-mcp を追加
+- Spec Kit インストール: `specify` を導入(kiro-cli連携)
+- プロダクト概要の投入: 概要を渡し、Spec Kit を回し始める
+  - constitution(憲章): プロジェクトの原則を決める
+  - specify(仕様): 作るものを書く
+  - clarify(曖昧点の確認): 質問に答えて仕様を固める
+  - plan(設計): 構成と方式を決める
+  - tasks(作業分解): 34個の作業に分ける
+  - analyze(食い違い点検): 書類どうしのずれを直す
+  - implement(実装とデプロイ): 作業の順に実装し、AWSで確かめる
 
 ---
 
