@@ -1,6 +1,6 @@
 import pytest
 
-from req_coverage_runner.coverage import THRESHOLD, Judgment, build_coverage, judge
+from req_coverage_runner.coverage import THRESHOLD, Judgment, build_coverage, judge, unmatched_tests
 from req_coverage_runner.csv_io import Row
 
 REQS = [Row("R1", "要件1"), Row("R2", "要件2"), Row("R3", "要件3")]
@@ -67,3 +67,43 @@ def test_範囲外のscoreは失敗する():
         judge(1.1)
     with pytest.raises(ValueError):
         judge(-0.1)
+
+
+@pytest.mark.parametrize(
+    ("score", "level"),
+    [(1.0, "high"), (0.9, "high"), (0.8999, "medium"), (0.7, "medium"), (0.6999, "low"), (0.5, "low")],
+)
+def test_カバー済みの要件の確度と札は最高の判定で決まる(score, level):
+    js = _scores(R1={"T1": score, "T2": 0.1}, R2={"T1": 0, "T2": 0}, R3={"T1": 0, "T2": 0})
+    first = build_coverage(REQS, TESTS, js)[0]
+    assert first.confidence == pytest.approx(score)
+    assert first.level == level
+
+
+def test_確度は一致したテストの最高のscoreで_複数あっても最高を使う():
+    js = _scores(R1={"T1": 0.6, "T2": 0.95}, R2={"T1": 0, "T2": 0}, R3={"T1": 0, "T2": 0})
+    first = build_coverage(REQS, TESTS, js)[0]
+    assert first.confidence == pytest.approx(0.95)
+    assert first.level == "high"
+
+
+def test_未カバーの要件は確度を出さず要確認にする():
+    js = _scores(R1={"T1": 0, "T2": 0}, R2={"T1": 0.49, "T2": 0.1}, R3={"T1": 0, "T2": 0})
+    cov = build_coverage(REQS, TESTS, js)
+    for c in cov:
+        assert not c.covered
+        assert c.confidence is None
+        assert c.level == "needs_review"
+
+
+def test_どの要件にも対応しなかったテストを入力の順に返す():
+    tests = [Row("T1", "a"), Row("T2", "b"), Row("T3", "c")]
+    js = [Judgment(r, t, s) for r, t, s in [("R1", "T1", 0.9), ("R1", "T2", 0.1), ("R1", "T3", 0.1)]]
+    js += [Judgment(r, t, 0.2) for r in ("R2", "R3") for t in ("T1", "T2", "T3")]
+    cov = build_coverage(REQS, tests, js)
+    assert unmatched_tests(tests, cov) == [Row("T2", "b"), Row("T3", "c")]
+
+
+def test_すべてのテストが対応していれば空():
+    js = [Judgment(r, t, 0.9) for r in ("R1", "R2", "R3") for t in ("T1", "T2")]
+    assert unmatched_tests(TESTS, build_coverage(REQS, TESTS, js)) == []

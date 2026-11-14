@@ -5,7 +5,7 @@ import io
 import json
 from dataclasses import dataclass
 
-from req_coverage_runner.coverage import THRESHOLD, Coverage, Judgment, judge
+from req_coverage_runner.coverage import THRESHOLD, Coverage, Judgment, Level, judge, unmatched_tests
 from req_coverage_runner.csv_io import Row
 
 
@@ -15,6 +15,9 @@ class RunMeta:
     model: str
     started_at: str
     finished_at: str
+
+
+_LEVEL_LABEL: dict[Level, str] = {"high": "高", "medium": "中", "low": "低", "needs_review": ""}
 
 
 def render_csv(requirements: list[Row], tests: list[Row], judgments: list[Judgment]) -> str:
@@ -34,6 +37,7 @@ def render_csv(requirements: list[Row], tests: list[Row], judgments: list[Judgme
 def render_json(meta: RunMeta, requirements: list[Row], tests: list[Row], coverage: list[Coverage]) -> str:
     by_id = {r.id: r for r in requirements}
     covered = sum(c.covered for c in coverage)
+    unmatched = unmatched_tests(tests, coverage)
     body = {
         "meta": {
             "run_id": meta.run_id,
@@ -49,6 +53,8 @@ def render_json(meta: RunMeta, requirements: list[Row], tests: list[Row], covera
                 "id": c.requirement_id,
                 "description": by_id[c.requirement_id].description,
                 "covered": c.covered,
+                "confidence": None if c.confidence is None else round(c.confidence, 4),
+                "level": c.level,
                 "matched_count": c.matched_count,
                 "matched": [
                     {"test_id": m.test_id, "score": round(m.score, 4), "confidence": round(m.confidence, 4)}
@@ -57,7 +63,12 @@ def render_json(meta: RunMeta, requirements: list[Row], tests: list[Row], covera
             }
             for c in coverage
         ],
-        "summary": {"covered": covered, "uncovered": len(coverage) - covered},
+        "unmatched_tests": [{"id": t.id, "description": t.description} for t in unmatched],
+        "summary": {
+            "covered": covered,
+            "uncovered": len(coverage) - covered,
+            "unmatched_tests": len(unmatched),
+        },
     }
     return json.dumps(body, ensure_ascii=False, indent=2) + "\n"
 
@@ -73,6 +84,7 @@ def _cell(text: str) -> str:
 def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], coverage: list[Coverage]) -> str:
     by_id = {r.id: r for r in requirements}
     covered = [c for c in coverage if c.covered]
+    unmatched = unmatched_tests(tests, coverage)
     uncovered = [c for c in coverage if not c.covered]
     lines = [
         f"# 要件カバレッジのレポート: {meta.run_id}",
@@ -81,20 +93,35 @@ def render_markdown(meta: RunMeta, requirements: list[Row], tests: list[Row], co
         f"- 実行: {meta.started_at} 〜 {meta.finished_at}",
         f"- 要件: {len(requirements)}件、E2Eテスト: {len(tests)}件",
         f"- 「はい」のしきい値: {THRESHOLD}",
-        f"- カバー済み: {len(covered)}件、未カバー: {len(uncovered)}件",
+        f"- カバー済み: {len(covered)}件、未カバー（要確認）: {len(uncovered)}件",
+        f"- テスト: {len(tests)}件、うち要件に対応しなかったもの: {len(unmatched)}件",
         "",
-        "## 未カバーの要件",
+        "## 未カバーの要件（要確認）",
         "",
     ]
     if uncovered:
         lines += [f"- {_cell(c.requirement_id)}: {_cell(by_id[c.requirement_id].description)}" for c in uncovered]
     else:
         lines.append("なし")
+    lines += ["", "## どの要件にも対応しなかったテスト", ""]
+    if unmatched:
+        lines.append("要件にない動作のテストか、見逃しかを、確かめる。テストが要件より多いのは、普通である。")
+        lines.append("")
+        lines += [f"- {_cell(t.id)}: {_cell(t.description)}" for t in unmatched]
+    else:
+        lines.append("なし")
     lines += ["", "## 要件ごとの結果", ""]
-    lines += ["| 要件 | 説明 | カバー | 対応するテスト（確信度） |", "| --- | --- | --- | --- |"]
+    lines += [
+        "| 要件 | 説明 | モデルの判定 | 対応テスト数 | 確度 | 確度の札 | 対応するテスト（確信度） |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
     for c in coverage:
-        matched = "<br>".join(f"{_cell(m.test_id)}（{m.confidence:.2f}）" for m in c.matched) or "-"
-        mark = "○" if c.covered else "×"
+        matched = "<br>".join(f"{_cell(m.test_id)}（{m.confidence:.2f}）" for m in c.matched)
+        mark = "対応あり" if c.covered else "対応なし"
         description = _cell(by_id[c.requirement_id].description)
-        lines.append(f"| {_cell(c.requirement_id)} | {description} | {mark} | {matched} |")
+        # 数値の列（対応テスト数、確度）には、数値だけを書く。未カバーの確度は、空にする
+        confidence = "" if c.confidence is None else f"{c.confidence:.2f}"
+        level = _LEVEL_LABEL[c.level]
+        row = [_cell(c.requirement_id), description, mark, str(c.matched_count), confidence, level, matched]
+        lines.append("| " + " | ".join(row) + " |")
     return "\n".join(lines) + "\n"

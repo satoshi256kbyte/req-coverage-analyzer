@@ -6,8 +6,12 @@ from typing import Literal
 from req_coverage_runner.csv_io import Row
 
 THRESHOLD = 0.5
+# 要件の確度の札。公式の測定で、確信度 0.9 以上は、短い分類でおよそ 95% 正しい
+HIGH_CONFIDENCE = 0.9
+MEDIUM_CONFIDENCE = 0.7
 
 Verdict = Literal["yes", "no"]
+Level = Literal["high", "medium", "low", "needs_review"]
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,21 @@ class Coverage:
     @property
     def matched_count(self) -> int:
         return len(self.matched)
+
+    @property
+    def confidence(self) -> float | None:
+        """カバー済みの要件の確度。一致したテストの、最高の確信度。未カバーは、出さない（見逃しがありうるため）。"""
+        return self.matched[0].confidence if self.matched else None
+
+    @property
+    def level(self) -> Level:
+        """確度の札。未カバーは、確度ではなく「要確認」にする。"""
+        confidence = self.confidence
+        if confidence is None:
+            return "needs_review"
+        if confidence >= HIGH_CONFIDENCE:
+            return "high"
+        return "medium" if confidence >= MEDIUM_CONFIDENCE else "low"
 
 
 def judge(score: float) -> Decision:
@@ -72,3 +91,12 @@ def build_coverage(requirements: list[Row], tests: list[Row], judgments: list[Ju
         matched.sort(key=lambda m: m.score, reverse=True)
         result.append(Coverage(req.id, bool(matched), matched))
     return result
+
+
+def unmatched_tests(tests: list[Row], coverage: list[Coverage]) -> list[Row]:
+    """どの要件でも「はい」と判定されなかったテスト。入力の順。
+
+    要件より、テストが多いのは普通。要件にない動作のテストか、モデルの見逃しかは、人が確かめる。
+    """
+    matched = {m.test_id for c in coverage for m in c.matched}
+    return [t for t in tests if t.id not in matched]
